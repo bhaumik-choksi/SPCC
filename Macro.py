@@ -1,43 +1,38 @@
 import re   # Regex for splitting macro name line into args
-f_input = open("macro_input.txt")
+f_input = open("macro_input.txt")  # File Input
 inputcode = list(line.strip() for line in f_input)
 
 # Pass 1 : Building Definitions
-MDT = []
-MNT = {}
-ALA_list = {}
-input_for_pass_2 = []
+# Initialize Data Structures
+MDT = []    # MDT is a list since we need to iterate over it
+MNT = {}    # MNT is a dictionary since we need to query it
+ALA_list = {}   # ALA_list stores ALA for each macro, with the macro name as key
+input_for_pass_2 = []   # Lines that are not part of the macro def are sent to pass 2
 iterator = iter(inputcode)
 while True:
     try:
         line = next(iterator)
-        if line == "MACRO":
+        if line == "MACRO":  # Macro definition found
             nameline = next(iterator)
-            nameline = re.split('[,\s]',nameline)
+            nameline = re.split('[,\s]',nameline)   # Split line into words
             macro_name = ""
             for token in nameline:
-                if "&" not in token:
+                if "&" not in token:    # Macro name is the word with no ampersand
                     macro_name = token
                     break
 
-            label = None
-            if nameline.index(macro_name) == 1:
-                label = nameline[0]
             MNT[macro_name] = len(MDT)  # Add MNT entry
             ALA = {}  # Init ALA
-            if label is not None:
-                ALA[label] = "#LABEL"
-                nameline[nameline.index(label)] = ALA[label]
             arg_counter = 0
-            for token in nameline:
-                if token is not "#LABEL" and token is not macro_name:
+            for token in nameline:  # Adding arguments to ALA
+                if token is not macro_name:
                     arg_counter += 1
                     ALA[token] = "#"+str(arg_counter)
-                    nameline[nameline.index(token)] = ALA[token]
+                    nameline[nameline.index(token)] = ALA[token]    # Replacing args in macro name line
             ALA_list[macro_name] = ALA
             MDT.append(nameline)
 
-            while True:
+            while True:  # Add subsequent lines into macro definition
                 macroline = next(iterator)
                 for argument in ALA.keys():
                     if argument in macroline:
@@ -49,7 +44,7 @@ while True:
             input_for_pass_2.append(line)
     except StopIteration:
         break
-
+# Pass 1 ends. Print all tables.
 print("\nMNT is ")
 for line in MNT.items():
     print(line)
@@ -69,13 +64,33 @@ while True:
         line = re.split('[,\s]', line)
         if any(word in line for word in MNT.keys()):  # MACRO NAME FOUND
             macroname = ""
+            # Macro name could be on pos 0 or 1 based on the presence of a label
             if line[0] in MNT.keys():
                 macroname = line[0]
             else:
                 macroname = line[1]
                 label = line[0]
-
+            actual_args = []
+            # Append everything that is not the macro name into actual arg list
+            # Everything in the macro call apart from macro name is an argument
+            for token in line:
+                if not token == macroname:
+                    actual_args.append(token)
+            # Hail Bhaumik
+            ALA = ALA_list  [macroname]
+            ALA = {val: key for key, val in ALA.items()} # Reverse mapping of ALA from B->A to A->B
+            formal_args = sorted(list(ALA.keys()))
+            for i in range(len(formal_args)):
+                ALA[formal_args[i]] = actual_args[i]    # Add actual arguments into ALA
+            MDTP = MNT[macroname] + 1
+            while "MEND" not in MDT[MDTP]:
+                line = MDT[MDTP]
+                for formal_arg,actual_arg in ALA.items():
+                    line = line.replace(formal_arg,actual_arg)
+                print(line) # Print each line in expanded macro
+                MDTP += 1
         else:
-            print(line)
+            print(" ".join(line))   # Print "line" array as string
     except StopIteration:
         break
+# https://www.youtube.com/watch?v=dQw4w9WgXcQ
