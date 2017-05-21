@@ -25,7 +25,7 @@ for LHS, RHS in grammar.items():
         for production in RHS["non-recursive_part"]:
             new1.append(production+new_nonterminal)
         for production in RHS["recursive_part"]:
-            new2.append(production+new_nonterminal)
+            new2.append(production[1:]+new_nonterminal)     # Change made here
         new2.append("@") # Append an epsilon
         output_grammar[LHS] = new1
         output_grammar[new_nonterminal] = new2
