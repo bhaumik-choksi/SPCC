@@ -5,4 +5,4 @@
 3. Lexical Analyzer
 4. Operator Precedence Parser
 5. Elimination of direct left recursion
-
+6. First and follow (fnf.py)
